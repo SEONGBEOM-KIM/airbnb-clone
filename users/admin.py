@@ -8,7 +8,6 @@ class CustomUserAdmin(UserAdmin):
 
     """Custom User Admin"""
 
-
     fieldsets = UserAdmin.fieldsets + (
         (
             "Custom Profile",
@@ -39,4 +38,6 @@ class CustomUserAdmin(UserAdmin):
         "superhost",
         "is_staff",
         "is_superuser",
+        "email_verified",
+        "email_secret",
     )
