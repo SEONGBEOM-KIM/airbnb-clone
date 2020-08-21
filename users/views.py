@@ -9,14 +9,13 @@ from django.contrib.auth import authenticate, login, logout
 from django.core.files.base import ContentFile
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
-from . import forms, models
+from . import forms, models, mixins
 
 
-class LoginView(SuccessMessageMixin, FormView):
+class LoginView(mixins.LoggedOutOnlyView, SuccessMessageMixin, FormView):
 
     template_name = "users/login.html"
     form_class = forms.LoginForm
-    success_url = reverse_lazy("core:home")
     success_message = "Welecome back!"
 
     def form_valid(self, form):
@@ -27,6 +26,13 @@ class LoginView(SuccessMessageMixin, FormView):
             login(self.request, user)
         return super().form_valid(form)
 
+    def get_success_url(self):
+        next_arg = self.request.GET.get("next")
+        if next_arg is not None:
+            return next_arg
+        else:
+            return reverse("core:home")
+
 
 def log_out(request):
     logout(request)
@@ -34,7 +40,7 @@ def log_out(request):
     return redirect(reverse("core:home"))
 
 
-class SignUpView(FormView):
+class SignUpView(mixins.LoggedOutOnlyView, FormView):
     template_name = "users/signup.html"
     form_class = forms.SignUpForm
     success_url = reverse_lazy("core:home")
@@ -202,7 +208,7 @@ class UserProfileView(DetailView):
     context_object_name = "user_obj"
 
 
-class UpdateProfileView(SuccessMessageMixin, UpdateView):
+class UpdateProfileView(mixins.LoggedInOnlyView, SuccessMessageMixin, UpdateView):
     model = models.User
     template_name = "users/update-profile.html"
     fields = (
@@ -223,10 +229,17 @@ class UpdateProfileView(SuccessMessageMixin, UpdateView):
         form = super().get_form(form_class=form_class)
         form.fields["birthdate"].widget.attrs = {"placeholder": "Birthdate"}
         form.fields["first_name"].widget.attrs = {"placeholder": "First name"}
+        form.fields["bio"].widget.attrs = {"Bio"}
+
         return form
 
 
-class UpdatePasswordView(SuccessMessageMixin, PasswordChangeView):
+class UpdatePasswordView(
+    mixins.EmailLoginOnlyView,
+    mixins.LoggedInOnlyView,
+    SuccessMessageMixin,
+    PasswordChangeView,
+):
 
     template_name = "users/update-password.html"
     success_message = "Password Updated"
